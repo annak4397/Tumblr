@@ -1,0 +1,77 @@
+//
+//  PhotosViewController.m
+//  Tumblr
+//
+//  Created by Anna Kuznetsova on 6/25/20.
+//  Copyright © 2020 Anna Kuznetsova. All rights reserved.
+//
+
+#import "PhotosViewController.h"
+#import "PostTableViewCell.h"
+#import "UIImageView+AFNetworking.h"
+
+@interface PhotosViewController () <UITableViewDataSource, UITableViewDelegate>
+
+@property (strong, nonatomic) NSArray *posts;
+@property (weak, nonatomic) IBOutlet UITableView *postsTableView;
+
+@end
+
+@implementation PhotosViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    self.postsTableView.dataSource = self;
+    self.postsTableView.delegate = self;
+    
+    NSURL *url = [NSURL URLWithString:@"https://api.tumblr.com/v2/blog/humansofnewyork.tumblr.com/posts/photo?api_key=Q6vHoaVm5L1u2ZAW1fqv3Jw48gFzYVg9P0vH0VHl3GVy6quoGV"];
+    NSURLRequest *request = [NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:10.0];
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:nil delegateQueue:[NSOperationQueue mainQueue]];
+    NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            if (error != nil) {
+                NSLog(@"%@", [error localizedDescription]);
+            }
+            else {
+                NSDictionary *dataDictionary = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+                NSDictionary *responseDictionary = dataDictionary[@"response"];
+                self.posts = responseDictionary[@"posts"];
+                [self.postsTableView reloadData];
+                
+                // TODO: Get the posts and store in posts property
+                // TODO: Reload the table view
+            }
+        }];
+    [task resume];
+    
+    
+}
+-(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
+    return self.posts.count;
+}
+-(UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
+    PostTableViewCell *cell = [self.postsTableView dequeueReusableCellWithIdentifier:@"PostTableViewCell" forIndexPath:indexPath];
+    NSDictionary *post = self.posts[indexPath.row];
+    NSArray *photos = post[@"photos"];
+    if(photos){
+        NSDictionary *photo = photos[0];
+        NSDictionary *originalSize = photo[@"original_size"];
+        NSString *urlString = originalSize[@"url"];
+        NSURL *url = [NSURL URLWithString:urlString];
+        [cell.photoImageView setImageWithURL:url];
+    }
+    return cell;
+}
+
+/*
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+}
+*/
+
+@end
